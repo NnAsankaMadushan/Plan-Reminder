@@ -1,4 +1,4 @@
-package com.example.reminder_app
+package com.company.reminderapp
 
 import io.flutter.embedding.android.FlutterActivity
 

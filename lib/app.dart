@@ -7,6 +7,7 @@ import 'core/theme/app_theme.dart';
 import 'features/app/presentation/pages/app_shell.dart';
 import 'features/calendar/presentation/bloc/calendar_bloc.dart';
 import 'features/chat/presentation/bloc/chat_bloc.dart';
+import 'features/google_calendar/presentation/bloc/google_calendar_bloc.dart';
 import 'features/reminder/presentation/bloc/reminder_bloc.dart';
 
 class ReminderApp extends StatelessWidget {
@@ -30,6 +31,11 @@ class ReminderApp extends StatelessWidget {
           create: (_) => ChatBloc(
             parserService: ServiceRegistry.parserService,
             voiceInputService: ServiceRegistry.voiceInputService,
+          ),
+        ),
+        BlocProvider<GoogleCalendarBloc>(
+          create: (_) => GoogleCalendarBloc(
+            calendarService: ServiceRegistry.googleCalendarService,
           ),
         ),
       ],

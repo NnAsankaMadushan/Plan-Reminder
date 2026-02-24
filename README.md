@@ -12,6 +12,7 @@ The app parses natural language from typed/voice input, creates calendar events,
 - Manual add/edit/delete event flow
 - Local notifications with timezone scheduling
 - Persistent local storage with Hive
+- Optional Google Calendar upcoming-events view (connect only if user wants)
 
 ## Tech Stack
 
@@ -25,25 +26,9 @@ The app parses natural language from typed/voice input, creates calendar events,
 - `speech_to_text`
 - `hive` + `hive_flutter`
 - `flutter_animate`
+- `google_sign_in`
+- `googleapis` (Calendar API)
 
-## Project Structure
-
-```text
-lib/
- ├── core/
- │    ├── constants/
- │    ├── services/
- │    ├── theme/
- │    └── utils/
- ├── features/
- │    ├── app/
- │    ├── calendar/
- │    ├── chat/
- │    ├── parser/
- │    └── reminder/
- ├── app.dart
- └── main.dart
-```
 
 ## NLP Parser Rules
 
@@ -82,6 +67,19 @@ lib/
 
 - `NSMicrophoneUsageDescription`
 - `NSSpeechRecognitionUsageDescription`
+
+## Optional: Google Calendar Connect Setup
+
+Google Calendar integration is optional and only used when the user taps **Connect Google Calendar**.
+
+1. Enable **Google Calendar API** in your Google Cloud project.
+2. Create OAuth client credentials:
+   - Android client (package name + SHA-1)
+   - iOS client (bundle identifier)
+3. Ensure your app package/bundle IDs match the OAuth setup.
+4. Build and run, then open the **Google** tab and connect.
+
+If OAuth is not configured, the core reminder app still works fully offline.
 
 ## Test
 

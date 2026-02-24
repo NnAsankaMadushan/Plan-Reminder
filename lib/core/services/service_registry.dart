@@ -1,3 +1,4 @@
+import '../../features/google_calendar/data/services/google_calendar_service.dart';
 import '../../features/parser/data/services/local_event_parser_service.dart';
 import '../../features/parser/domain/services/event_parser_service.dart';
 import '../../features/reminder/data/datasources/reminder_local_datasource.dart';
@@ -14,6 +15,7 @@ class ServiceRegistry {
   static late ReminderRepository reminderRepository;
   static late NotificationService notificationService;
   static late VoiceInputService voiceInputService;
+  static late GoogleCalendarService googleCalendarService;
 
   static Future<void> initialize() async {
     await HiveService.initialize();
@@ -27,5 +29,6 @@ class ServiceRegistry {
     await notificationService.initialize();
 
     voiceInputService = VoiceInputService();
+    googleCalendarService = GoogleCalendarService();
   }
 }
