@@ -59,48 +59,69 @@ class GoogleCalendarService {
     }
 
     final api = calendar_api.CalendarApi(authClient);
-    final response = await api.events.list(
-      'primary',
-      singleEvents: true,
-      orderBy: 'startTime',
-      timeMin: DateTime.now().toUtc(),
-      maxResults: maxResults,
-    );
+    try {
+      final response = await api.events.list(
+        'primary',
+        singleEvents: true,
+        orderBy: 'startTime',
+        timeMin: DateTime.now().toUtc(),
+        maxResults: maxResults,
+      );
 
-    final items = response.items ?? const <calendar_api.Event>[];
+      final items = response.items ?? const <calendar_api.Event>[];
 
-    final events = <GoogleCalendarEvent>[];
-    for (final item in items) {
-      final startDateTime = item.start?.dateTime ?? item.start?.date;
-      if (startDateTime == null) {
-        continue;
+      final events = <GoogleCalendarEvent>[];
+      for (final item in items) {
+        final startDateTime = item.start?.dateTime ?? item.start?.date;
+        if (startDateTime == null) {
+          continue;
+        }
+
+        final endDateTime = item.end?.dateTime ?? item.end?.date;
+        events.add(
+          GoogleCalendarEvent(
+            id: item.id ?? startDateTime.toIso8601String(),
+            title: item.summary?.trim().isNotEmpty == true
+                ? item.summary!.trim()
+                : '(No title)',
+            start: startDateTime.toLocal(),
+            end: endDateTime?.toLocal(),
+            location: item.location,
+            description: item.description,
+            isAllDay: item.start?.date != null && item.start?.dateTime == null,
+          ),
+        );
       }
 
-      final endDateTime = item.end?.dateTime ?? item.end?.date;
-      events.add(
-        GoogleCalendarEvent(
-          id: item.id ?? startDateTime.toIso8601String(),
-          title: item.summary?.trim().isNotEmpty == true
-              ? item.summary!.trim()
-              : '(No title)',
-          start: startDateTime.toLocal(),
-          end: endDateTime?.toLocal(),
-          location: item.location,
-          description: item.description,
-          isAllDay: item.start?.date != null && item.start?.dateTime == null,
-        ),
-      );
+      return events;
+    } catch (error) {
+      throw GoogleCalendarException(_friendlyCalendarApiError(error));
     }
-
-    return events;
   }
 
   String _friendlyGoogleSignInError(PlatformException error) {
     if (error.code == 'sign_in_failed') {
-      return 'Google sign-in failed. Verify Android package name, SHA-1, and '
-          'OAuth client configuration in Google Cloud/Firebase.';
+      return 'Google sign-in failed. Configure Android OAuth in Firebase/Google '
+          'Cloud and download a new google-services.json with oauth_client '
+          'entries (not empty). Verify package name and SHA-1/SHA-256.';
     }
     return 'Google sign-in failed: ${error.message ?? error.code}';
+  }
+
+  String _friendlyCalendarApiError(Object error) {
+    final message = error.toString();
+    final lowerCaseMessage = message.toLowerCase();
+
+    if (lowerCaseMessage.contains('google calendar api has not been used') ||
+        lowerCaseMessage.contains('access_not_configured') ||
+        (lowerCaseMessage.contains('status: 403') &&
+            lowerCaseMessage.contains('calendar'))) {
+      return 'Google Calendar API is disabled for the Google Cloud project '
+          'configured for this app. Enable Calendar API in Google Cloud, wait '
+          'a few minutes, and try again.';
+    }
+
+    return 'Failed to load Google Calendar events: $message';
   }
 }
 

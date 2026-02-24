@@ -12,7 +12,20 @@
           "package_name": "com.company.reminderapp"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "983826478304-e2g1a4fo3i9sl9r0u0muemmbqa3vnqia.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.company.reminderapp",
+            "certificate_hash": "1d7c13ed844165b1e8b11bec9248c4e981197cc7"
+          }
+        },
+        {
+          "client_id": "983826478304-q42q36pu75u9bi9f37psskdnab21uul9.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyAlbCiGRcsWtLAK_nXfJYQMD5lIABr6ZCA"
@@ -20,7 +33,12 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "983826478304-q42q36pu75u9bi9f37psskdnab21uul9.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }
