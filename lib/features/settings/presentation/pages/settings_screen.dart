@@ -138,7 +138,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
-                  Text('Plan Reminder App', style: theme.textTheme.titleSmall),
+                  Text('Reminder Buddy', style: theme.textTheme.titleSmall),
                   const SizedBox(height: 8),
                   Text(
                     'Offline NLP + local notifications with optional Google Calendar sync.',

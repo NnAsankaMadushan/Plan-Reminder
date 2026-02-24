@@ -49,7 +49,7 @@ class _AppShellState extends State<AppShell> {
   Widget build(BuildContext context) {
     final destinations = <_ShellDestination>[
       const _ShellDestination(
-        title: 'Plan Reminder',
+        title: 'Reminder Buddy',
         subtitle: 'Turn natural language into reminders',
       ),
       const _ShellDestination(

@@ -333,19 +333,22 @@ class _AssistantBanner extends StatelessWidget {
       ),
       child: Row(
         children: <Widget>[
-          Icon(
-            state.status == ChatStatus.listening
-                ? Icons.mic_external_on_outlined
-                : Icons.auto_awesome,
-            color: theme.colorScheme.primary,
+          ClipRRect(
+            borderRadius: BorderRadius.circular(12),
+            child: Image.asset(
+              'assets/logo.png',
+              width: 42,
+              height: 42,
+              fit: BoxFit.cover,
+            ),
           ),
-          const SizedBox(width: 10),
+          const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
                 Text(
-                  'Quick Capture',
+                  'Reminder Buddy',
                   style: theme.textTheme.titleMedium,
                 ),
                 const SizedBox(height: 2),

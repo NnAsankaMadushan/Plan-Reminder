@@ -1,6 +1,6 @@
 {
-    "name": "reminder_app",
-    "short_name": "reminder_app",
+    "name": "Reminder Buddy",
+    "short_name": "Reminder Buddy",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",

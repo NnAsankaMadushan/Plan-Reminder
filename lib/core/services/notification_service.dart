@@ -10,7 +10,7 @@ class NotificationService {
   NotificationService();
 
   static const String _channelId = 'plan_reminder_channel';
-  static const String _channelName = 'Plan Reminder Alerts';
+  static const String _channelName = 'Reminder Buddy Alerts';
   static const String _channelDescription =
       'Reminders scheduled before event start time.';
 
