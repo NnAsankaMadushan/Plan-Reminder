@@ -3,13 +3,11 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:uuid/uuid.dart';
 
-import '../../../../core/utils/date_time_extensions.dart';
 import '../../../calendar/presentation/bloc/calendar_bloc.dart';
 import '../../../parser/domain/entities/parsed_event.dart';
 import '../../../reminder/domain/entities/reminder_event.dart';
 import '../../../reminder/presentation/bloc/reminder_bloc.dart';
 import '../../../reminder/presentation/pages/add_edit_event_screen.dart';
-import '../../../reminder/presentation/pages/event_detail_screen.dart';
 import '../bloc/chat_bloc.dart';
 import '../widgets/chat_bubble.dart';
 import '../widgets/parse_preview_card.dart';
@@ -160,15 +158,6 @@ class _HomeScreenState extends State<HomeScreen> {
                     },
                   ),
                 ),
-                _RecentReminderSection(
-                  onTapEvent: (ReminderEvent event) {
-                    Navigator.of(context).push(
-                      MaterialPageRoute<void>(
-                        builder: (_) => EventDetailScreen(event: event),
-                      ),
-                    );
-                  },
-                ),
                 if (chatState.parsedEvent != null)
                   Padding(
                     padding: const EdgeInsets.fromLTRB(14, 8, 14, 0),
@@ -254,67 +243,6 @@ class _Composer extends StatelessWidget {
           ),
         ],
       ),
-    );
-  }
-}
-
-class _RecentReminderSection extends StatelessWidget {
-  const _RecentReminderSection({required this.onTapEvent});
-
-  final ValueChanged<ReminderEvent> onTapEvent;
-
-  @override
-  Widget build(BuildContext context) {
-    return BlocBuilder<CalendarBloc, CalendarState>(
-      builder: (BuildContext context, CalendarState state) {
-        final now = DateTime.now();
-        final events = state.events
-            .where((ReminderEvent event) => event.dateTime.isAfter(now))
-            .toList()
-          ..sort(
-            (ReminderEvent a, ReminderEvent b) =>
-                a.dateTime.compareTo(b.dateTime),
-          );
-
-        final recent = events.take(3).toList();
-        if (recent.isEmpty) {
-          return const SizedBox.shrink();
-        }
-
-        return Container(
-          width: double.infinity,
-          margin: const EdgeInsets.fromLTRB(14, 8, 14, 0),
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(14),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              Text(
-                'Upcoming',
-                style: Theme.of(context).textTheme.titleSmall,
-              ),
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: recent
-                    .map(
-                      (ReminderEvent event) => ActionChip(
-                        label: Text(
-                          '${event.title} • ${event.dateTime.toTimeLabel}',
-                        ),
-                        onPressed: () => onTapEvent(event),
-                      ),
-                    )
-                    .toList(),
-              ),
-            ],
-          ),
-        );
-      },
     );
   }
 }

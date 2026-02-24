@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/utils/date_time_extensions.dart';
+import '../../domain/entities/google_calendar_event.dart';
 import '../bloc/google_calendar_bloc.dart';
 
 class GoogleCalendarScreen extends StatefulWidget {
@@ -32,6 +33,10 @@ class _GoogleCalendarScreenState extends State<GoogleCalendarScreen> {
         }
       },
       builder: (BuildContext context, GoogleCalendarState state) {
+        final groupedEvents = _groupEventsByDate(state.events);
+        final sortedDates = groupedEvents.keys.toList()
+          ..sort((DateTime a, DateTime b) => a.compareTo(b));
+
         if (state.status == GoogleCalendarStatus.loading &&
             state.events.isEmpty &&
             !state.isConnected) {
@@ -81,40 +86,92 @@ class _GoogleCalendarScreenState extends State<GoogleCalendarScreen> {
               if (state.events.isEmpty)
                 const _EmptyEventsCard()
               else
-                ...state.events.map(
-                  (event) => Card(
-                    margin: const EdgeInsets.only(bottom: 8),
-                    child: ListTile(
-                      leading: Icon(
-                        event.isAllDay
-                            ? Icons.calendar_today_outlined
-                            : Icons.event_available_outlined,
+                ...<Widget>[
+                  for (final date in sortedDates) ...<Widget>[
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(2, 8, 2, 6),
+                      child: Text(
+                        date.toDateLabel,
+                        style: Theme.of(context).textTheme.titleSmall,
                       ),
-                      title: Text(event.title),
-                      subtitle: Text(
-                        event.isAllDay
-                            ? event.start.toDateLabel
-                            : '${event.start.toDateLabel} at ${event.start.toTimeLabel}',
-                      ),
-                      trailing: event.location?.trim().isNotEmpty == true
-                          ? SizedBox(
-                              width: 120,
-                              child: Text(
-                                event.location!,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                textAlign: TextAlign.end,
-                              ),
-                            )
-                          : null,
                     ),
-                  ),
-                ),
+                    ...groupedEvents[date]!.map(
+                      (GoogleCalendarEvent event) => _GoogleCalendarEventCard(
+                        event: event,
+                      ),
+                    ),
+                  ],
+                ],
             ],
           ),
         );
       },
     );
+  }
+
+  Map<DateTime, List<GoogleCalendarEvent>> _groupEventsByDate(
+    List<GoogleCalendarEvent> events,
+  ) {
+    final grouped = <DateTime, List<GoogleCalendarEvent>>{};
+
+    for (final event in events) {
+      final date = event.start.dateOnly;
+      grouped.putIfAbsent(date, () => <GoogleCalendarEvent>[]).add(event);
+    }
+
+    for (final dateEvents in grouped.values) {
+      dateEvents.sort(
+        (GoogleCalendarEvent a, GoogleCalendarEvent b) =>
+            a.start.compareTo(b.start),
+      );
+    }
+
+    return grouped;
+  }
+}
+
+class _GoogleCalendarEventCard extends StatelessWidget {
+  const _GoogleCalendarEventCard({required this.event});
+
+  final GoogleCalendarEvent event;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 8),
+      child: ListTile(
+        leading: Icon(
+          event.isAllDay
+              ? Icons.calendar_today_outlined
+              : Icons.event_available_outlined,
+        ),
+        title: Text(event.title),
+        subtitle: Text(_timeLabel(event)),
+        trailing: event.location?.trim().isNotEmpty == true
+            ? SizedBox(
+                width: 120,
+                child: Text(
+                  event.location!,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.end,
+                ),
+              )
+            : null,
+      ),
+    );
+  }
+
+  String _timeLabel(GoogleCalendarEvent event) {
+    if (event.isAllDay) {
+      return 'All day';
+    }
+
+    if (event.end == null) {
+      return event.start.toTimeLabel;
+    }
+
+    return '${event.start.toTimeLabel} - ${event.end!.toTimeLabel}';
   }
 }
 

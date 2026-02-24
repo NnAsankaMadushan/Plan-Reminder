@@ -6,14 +6,29 @@ class VoiceInputService {
 
   final SpeechToText _speechToText = SpeechToText();
   bool _isInitialized = false;
+  bool _isEnabled = true;
   VoidCallback? _activeOnDone;
 
   bool get isListening => _speechToText.isListening;
+  bool get isEnabled => _isEnabled;
+
+  Future<void> setEnabled(bool enabled) async {
+    _isEnabled = enabled;
+    if (!enabled) {
+      await cancelListening();
+    }
+  }
 
   Future<void> startListening({
     required void Function(String transcript, bool isFinal) onResult,
     required VoidCallback onDone,
   }) async {
+    if (!_isEnabled) {
+      throw const VoiceInputException(
+        'Voice input is disabled in Settings.',
+      );
+    }
+
     await _initializeIfNeeded();
     _activeOnDone = onDone;
 

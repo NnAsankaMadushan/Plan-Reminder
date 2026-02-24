@@ -60,8 +60,13 @@ class _AppShellState extends State<AppShell> {
       3 => const GoogleCalendarScreen(
           key: ValueKey<String>('google_calendar_page'),
         ),
-      _ => const SettingsScreen(
-          key: ValueKey<String>('settings_page'),
+      _ => SettingsScreen(
+          key: const ValueKey<String>('settings_page'),
+          onOpenGoogleCalendar: () {
+            setState(() {
+              _selectedIndex = 3;
+            });
+          },
         ),
     };
 

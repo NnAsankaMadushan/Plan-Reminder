@@ -18,6 +18,13 @@ class NotificationService {
       FlutterLocalNotificationsPlugin();
 
   bool _isInitialized = false;
+  int _reminderOffsetMinutes = AppConstants.reminderOffsetMinutes;
+
+  int get reminderOffsetMinutes => _reminderOffsetMinutes;
+
+  void setReminderOffsetMinutes(int minutes) {
+    _reminderOffsetMinutes = minutes < 0 ? 0 : minutes;
+  }
 
   Future<void> initialize() async {
     if (_isInitialized) {
@@ -82,7 +89,7 @@ class NotificationService {
 
   Future<void> scheduleReminder(ReminderEvent event) async {
     final triggerTime = event.dateTime.subtract(
-      const Duration(minutes: AppConstants.reminderOffsetMinutes),
+      Duration(minutes: _reminderOffsetMinutes),
     );
 
     if (triggerTime.isBefore(DateTime.now())) {
@@ -103,7 +110,7 @@ class NotificationService {
     await _notificationsPlugin.zonedSchedule(
       _notificationId(event.id),
       'Reminder',
-      '${event.title} starts in ${AppConstants.reminderOffsetMinutes} minutes',
+      '${event.title} starts in $_reminderOffsetMinutes minutes',
       tz.TZDateTime.from(triggerTime, tz.local),
       details,
       androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,

@@ -9,15 +9,19 @@ class GoogleCalendarService {
   GoogleCalendarService()
       : _googleSignIn = GoogleSignIn(
           scopes: <String>[
-            calendar_api.CalendarApi.calendarReadonlyScope,
-            calendar_api.CalendarApi.calendarEventsReadonlyScope,
+            calendar_api.CalendarApi.calendarEventsScope,
           ],
         );
 
   final GoogleSignIn _googleSignIn;
 
-  Future<bool> isSignedIn() {
-    return _googleSignIn.isSignedIn();
+  Future<bool> isSignedIn() async {
+    if (await _googleSignIn.isSignedIn()) {
+      return true;
+    }
+
+    final account = await _googleSignIn.signInSilently();
+    return account != null;
   }
 
   Future<String?> currentUserEmail() async {
@@ -45,8 +49,52 @@ class GoogleCalendarService {
     await _googleSignIn.signOut();
   }
 
+  Future<void> createEvent({
+    required String title,
+    required DateTime start,
+    DateTime? end,
+    String? location,
+    String? description,
+  }) async {
+    final signedIn = await isSignedIn();
+    if (!signedIn) {
+      return;
+    }
+
+    final hasWriteAccess = await _googleSignIn.requestScopes(<String>[
+      calendar_api.CalendarApi.calendarEventsScope,
+    ]);
+    if (!hasWriteAccess) {
+      throw const GoogleCalendarException(
+        'Google Calendar write permission was not granted.',
+      );
+    }
+
+    final authClient = await _googleSignIn.authenticatedClient();
+    if (authClient == null) {
+      throw const GoogleCalendarException('Failed to authenticate with Google.');
+    }
+
+    final api = calendar_api.CalendarApi(authClient);
+    final endDateTime = end ?? start.add(const Duration(hours: 1));
+
+    final request = calendar_api.Event(
+      summary: title,
+      location: location,
+      description: description,
+      start: calendar_api.EventDateTime(dateTime: start.toUtc()),
+      end: calendar_api.EventDateTime(dateTime: endDateTime.toUtc()),
+    );
+
+    try {
+      await api.events.insert(request, 'primary');
+    } catch (error) {
+      throw GoogleCalendarException(_friendlyCalendarApiError(error));
+    }
+  }
+
   Future<List<GoogleCalendarEvent>> getUpcomingEvents({
-    int maxResults = 20,
+    int maxResults = 100,
   }) async {
     final signedIn = await isSignedIn();
     if (!signedIn) {
@@ -58,13 +106,16 @@ class GoogleCalendarService {
       throw const GoogleCalendarException('Failed to authenticate with Google.');
     }
 
+    final now = DateTime.now();
+    final startOfTodayUtc = DateTime(now.year, now.month, now.day).toUtc();
+
     final api = calendar_api.CalendarApi(authClient);
     try {
       final response = await api.events.list(
         'primary',
         singleEvents: true,
         orderBy: 'startTime',
-        timeMin: DateTime.now().toUtc(),
+        timeMin: startOfTodayUtc,
         maxResults: maxResults,
       );
 
@@ -119,6 +170,11 @@ class GoogleCalendarService {
       return 'Google Calendar API is disabled for the Google Cloud project '
           'configured for this app. Enable Calendar API in Google Cloud, wait '
           'a few minutes, and try again.';
+    }
+    if (lowerCaseMessage.contains('insufficient') &&
+        lowerCaseMessage.contains('permission')) {
+      return 'Google Calendar permission is insufficient. Disconnect and '
+          'connect again to grant Calendar write access.';
     }
 
     return 'Failed to load Google Calendar events: $message';

@@ -1,7 +1,81 @@
 import 'package:flutter/material.dart';
 
-class SettingsScreen extends StatelessWidget {
-  const SettingsScreen({super.key});
+import '../../../../core/services/service_registry.dart';
+
+class SettingsScreen extends StatefulWidget {
+  const SettingsScreen({
+    super.key,
+    this.onOpenGoogleCalendar,
+  });
+
+  final VoidCallback? onOpenGoogleCalendar;
+
+  @override
+  State<SettingsScreen> createState() => _SettingsScreenState();
+}
+
+class _SettingsScreenState extends State<SettingsScreen> {
+  late int _reminderOffsetMinutes;
+  late bool _voiceInputEnabled;
+
+  @override
+  void initState() {
+    super.initState();
+    _reminderOffsetMinutes = ServiceRegistry.notificationService.reminderOffsetMinutes;
+    _voiceInputEnabled = ServiceRegistry.voiceInputService.isEnabled;
+  }
+
+  Future<void> _changeReminderOffset() async {
+    final options = <int>[0, 5, 10, 15, 30, 60];
+    final selected = await showModalBottomSheet<int>(
+      context: context,
+      builder: (BuildContext context) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              const ListTile(
+                title: Text('Reminder Offset'),
+                subtitle: Text('Schedule alert before event start time'),
+              ),
+              ...options.map(
+                (int minutes) => RadioListTile<int>(
+                  value: minutes,
+                  groupValue: _reminderOffsetMinutes,
+                  title: Text(
+                    minutes == 0 ? 'At event time' : '$minutes minutes before',
+                  ),
+                  onChanged: (int? value) {
+                    Navigator.of(context).pop(value);
+                  },
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+
+    if (selected == null) {
+      return;
+    }
+
+    ServiceRegistry.notificationService.setReminderOffsetMinutes(selected);
+    setState(() {
+      _reminderOffsetMinutes = selected;
+    });
+  }
+
+  Future<void> _setVoiceInputEnabled(bool enabled) async {
+    await ServiceRegistry.voiceInputService.setEnabled(enabled);
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      _voiceInputEnabled = enabled;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -29,24 +103,35 @@ class SettingsScreen extends StatelessWidget {
           const SizedBox(height: 8),
           Card(
             child: Column(
-              children: const <Widget>[
+              children: <Widget>[
                 _SettingTile(
                   icon: Icons.notifications_active_outlined,
                   title: 'Reminder Offset',
-                  subtitle: '5 minutes before event (current)',
+                  subtitle: _reminderOffsetMinutes == 0
+                      ? 'At event time (current)'
+                      : '$_reminderOffsetMinutes minutes before event (current)',
+                  onTap: _changeReminderOffset,
                 ),
-                Divider(height: 1),
-                _SettingTile(
-                  icon: Icons.mic_none_outlined,
-                  title: 'Voice Input',
-                  subtitle: 'Speech-to-text enabled',
-                ),
-                Divider(height: 1),
-                _SettingTile(
-                  icon: Icons.event_outlined,
-                  title: 'Google Calendar',
-                  subtitle: 'Manage connection in Google tab',
-                ),
+                // const Divider(height: 1),
+                // _SettingTile(
+                //   icon: Icons.mic_none_outlined,
+                //   title: 'Voice Input',
+                //   subtitle: _voiceInputEnabled
+                //       ? 'Speech-to-text enabled'
+                //       : 'Speech-to-text disabled',
+                //   onTap: () => _setVoiceInputEnabled(!_voiceInputEnabled),
+                //   trailing: Switch(
+                //     value: _voiceInputEnabled,
+                //     onChanged: _setVoiceInputEnabled,
+                //   ),
+                // ),
+                // const Divider(height: 1),
+                // _SettingTile(
+                //   icon: Icons.event_outlined,
+                //   title: 'Google Calendar',
+                //   subtitle: 'Open Google tab',
+                //   onTap: widget.onOpenGoogleCalendar,
+                // ),
               ],
             ),
           ),
@@ -80,19 +165,24 @@ class _SettingTile extends StatelessWidget {
     required this.icon,
     required this.title,
     required this.subtitle,
+    this.onTap,
+    this.trailing,
   });
 
   final IconData icon;
   final String title;
   final String subtitle;
+  final VoidCallback? onTap;
+  final Widget? trailing;
 
   @override
   Widget build(BuildContext context) {
     return ListTile(
+      onTap: onTap,
       leading: Icon(icon),
       title: Text(title),
       subtitle: Text(subtitle),
-      trailing: const Icon(Icons.chevron_right),
+      trailing: trailing ?? const Icon(Icons.chevron_right),
     );
   }
 }

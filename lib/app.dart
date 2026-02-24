@@ -20,6 +20,7 @@ class ReminderApp extends StatelessWidget {
         BlocProvider<CalendarBloc>(
           create: (_) => CalendarBloc(
             reminderRepository: ServiceRegistry.reminderRepository,
+            googleCalendarService: ServiceRegistry.googleCalendarService,
           ),
         ),
         BlocProvider<ReminderBloc>(
@@ -36,7 +37,7 @@ class ReminderApp extends StatelessWidget {
         BlocProvider<GoogleCalendarBloc>(
           create: (_) => GoogleCalendarBloc(
             calendarService: ServiceRegistry.googleCalendarService,
-          ),
+          )..add(const GoogleCalendarStarted()),
         ),
       ],
       child: MaterialApp(
