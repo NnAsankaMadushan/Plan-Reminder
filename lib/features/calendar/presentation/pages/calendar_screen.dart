@@ -35,6 +35,7 @@ class CalendarScreen extends StatelessWidget {
         return BlocBuilder<GoogleCalendarBloc, GoogleCalendarState>(
           builder:
               (BuildContext context, GoogleCalendarState googleCalendarState) {
+            final theme = Theme.of(context);
             final googleEvents = googleCalendarState.isConnected
                 ? googleCalendarState.events
                 : const <GoogleCalendarEvent>[];
@@ -46,12 +47,12 @@ class CalendarScreen extends StatelessWidget {
 
             return SafeArea(
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(14, 12, 14, 10),
+                padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
                 child: Column(
                   children: <Widget>[
                     Card(
                       child: Padding(
-                        padding: const EdgeInsets.all(8),
+                        padding: const EdgeInsets.fromLTRB(8, 8, 8, 10),
                         child: TableCalendar<Object>(
                           firstDay: DateTime.utc(2020, 1, 1),
                           lastDay: DateTime.utc(2100, 12, 31),
@@ -72,20 +73,62 @@ class CalendarScreen extends StatelessWidget {
                                 );
                           },
                           calendarFormat: CalendarFormat.month,
-                          headerStyle: const HeaderStyle(
+                          headerStyle: HeaderStyle(
                             titleCentered: true,
                             formatButtonVisible: false,
+                            leftChevronIcon: Icon(
+                              Icons.chevron_left,
+                              color: theme.colorScheme.primary,
+                            ),
+                            rightChevronIcon: Icon(
+                              Icons.chevron_right,
+                              color: theme.colorScheme.primary,
+                            ),
+                            titleTextStyle: theme.textTheme.titleMedium!,
+                          ),
+                          calendarStyle: CalendarStyle(
+                            outsideDaysVisible: false,
+                            selectedDecoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: theme.colorScheme.primary,
+                            ),
+                            todayDecoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: theme.colorScheme.tertiary.withValues(alpha: 0.2),
+                            ),
+                            markersMaxCount: 3,
+                            markerDecoration: BoxDecoration(
+                              color: theme.colorScheme.secondary,
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                          daysOfWeekStyle: DaysOfWeekStyle(
+                            weekdayStyle: theme.textTheme.labelLarge!,
+                            weekendStyle: theme.textTheme.labelLarge!,
                           ),
                         ),
                       ),
                     ),
                     const SizedBox(height: 12),
-                    Align(
-                      alignment: Alignment.centerLeft,
-                      child: Text(
-                        'Events on ${state.selectedDay.toDateLabel}',
-                        style: Theme.of(context).textTheme.titleMedium,
-                      ),
+                    Row(
+                      children: <Widget>[
+                        Text(
+                          'Events',
+                          style: theme.textTheme.titleMedium,
+                        ),
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(999),
+                            color: theme.colorScheme.primary.withValues(alpha: 0.12),
+                          ),
+                          child: Text('${selectedItems.length}'),
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 8),
                     Expanded(
@@ -100,27 +143,17 @@ class CalendarScreen extends StatelessWidget {
                                 key: ValueKey<String>(
                                   'events_${state.selectedDay.toIso8601String()}',
                                 ),
+                                padding: const EdgeInsets.only(bottom: 6),
                                 itemCount: selectedItems.length,
                                 separatorBuilder: (_, __) =>
                                     const SizedBox(height: 8),
                                 itemBuilder: (BuildContext context, int index) {
                                   final item = selectedItems[index];
-                                  return Card(
-                                    child: ListTile(
-                                      onTap: item.reminderEvent == null
-                                          ? null
-                                          : () => onEventTap(item.reminderEvent!),
-                                      leading: Icon(
-                                        item.source == _CalendarEventSource.google
-                                            ? Icons.event_available_outlined
-                                            : Icons.event_note_outlined,
-                                      ),
-                                      title: Text(item.title),
-                                      subtitle: Text(_subtitle(item)),
-                                      trailing: item.reminderEvent == null
-                                          ? null
-                                          : const Icon(Icons.chevron_right),
-                                    ),
+                                  return _CalendarEventCard(
+                                    item: item,
+                                    onTap: item.reminderEvent == null
+                                        ? null
+                                        : () => onEventTap(item.reminderEvent!),
                                   );
                                 },
                               ),
@@ -179,18 +212,104 @@ class CalendarScreen extends StatelessWidget {
 
     return items;
   }
+}
 
-  String _subtitle(_CalendarEventItem item) {
-    final parts = <String>[
-      item.isAllDay ? 'All day' : item.timeLabel,
-      item.sourceLabel,
-    ];
+class _CalendarEventCard extends StatelessWidget {
+  const _CalendarEventCard({
+    required this.item,
+    required this.onTap,
+  });
 
-    if (item.location?.trim().isNotEmpty == true) {
-      parts.add(item.location!.trim());
-    }
+  final _CalendarEventItem item;
+  final VoidCallback? onTap;
 
-    return parts.join(' - ');
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isGoogle = item.source == _CalendarEventSource.google;
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(18),
+        child: Ink(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(18),
+            color: theme.colorScheme.surface.withValues(alpha: 0.93),
+            border: Border.all(color: theme.colorScheme.outline),
+          ),
+          padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+          child: Row(
+            children: <Widget>[
+              Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(12),
+                  color: (isGoogle
+                          ? theme.colorScheme.tertiary
+                          : theme.colorScheme.primary)
+                      .withValues(alpha: 0.14),
+                ),
+                child: Icon(
+                  isGoogle
+                      ? Icons.event_available_outlined
+                      : Icons.event_note_outlined,
+                  color: isGoogle
+                      ? theme.colorScheme.tertiary
+                      : theme.colorScheme.primary,
+                  size: 18,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Text(item.title, style: theme.textTheme.titleSmall),
+                    const SizedBox(height: 4),
+                    Text(
+                      item.timeLabel,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+                      ),
+                    ),
+                    if (item.location?.trim().isNotEmpty == true)
+                      Text(
+                        item.location!.trim(),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurface.withValues(alpha: 0.64),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(999),
+                  color: theme.colorScheme.primary.withValues(alpha: 0.08),
+                ),
+                child: Text(
+                  item.sourceLabel,
+                  style: theme.textTheme.labelSmall,
+                ),
+              ),
+              if (onTap != null) ...<Widget>[
+                const SizedBox(width: 4),
+                Icon(
+                  Icons.chevron_right,
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }
 

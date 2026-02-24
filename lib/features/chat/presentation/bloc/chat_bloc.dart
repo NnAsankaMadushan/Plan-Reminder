@@ -174,21 +174,15 @@ class ChatBloc extends Bloc<ChatEventAction, ChatState> {
   }
 
   void _onReminderConfirmed(
-    ChatReminderConfirmed event,
+    ChatReminderConfirmed _,
     Emitter<ChatState> emit,
   ) {
-    final confirmation = _buildMessage(
-      'Reminder saved for ${event.event.dateTime.toDateTimeLabel}.',
-      ChatAuthor.system,
-    );
-
     emit(
       state.copyWith(
         status: ChatStatus.initial,
         parsedEvent: null,
         draftText: '',
         errorMessage: null,
-        messages: <ChatMessage>[...state.messages, confirmation],
       ),
     );
   }

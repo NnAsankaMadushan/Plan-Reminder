@@ -115,6 +115,7 @@ class _AddEditEventScreenState extends State<AddEditEventScreen> {
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
+    final theme = Theme.of(context);
 
     return Scaffold(
       appBar: AppBar(
@@ -122,62 +123,73 @@ class _AddEditEventScreenState extends State<AddEditEventScreen> {
       ),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
           child: Form(
             key: _formKey,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
-                Text('Details', style: textTheme.titleLarge),
-                const SizedBox(height: 12),
-                TextFormField(
-                  controller: _titleController,
-                  decoration: const InputDecoration(
-                    labelText: 'Title',
-                    hintText: 'Meeting with Sarah',
-                  ),
-                  textInputAction: TextInputAction.next,
-                  validator: (String? value) {
-                    if (value == null || value.trim().isEmpty) {
-                      return 'Title is required.';
-                    }
-                    return null;
-                  },
+                _DateTimeHeader(
+                  dateLabel: _selectedDate.toDateLabel,
+                  timeLabel: _selectedTime.format(context),
                 ),
                 const SizedBox(height: 12),
-                TextFormField(
-                  controller: _locationController,
-                  decoration: const InputDecoration(
-                    labelText: 'Location (optional)',
-                    hintText: 'Office, Zoom, Cafe',
-                  ),
-                  textInputAction: TextInputAction.done,
-                ),
-                const SizedBox(height: 20),
                 Card(
-                  child: Column(
-                    children: <Widget>[
-                      ListTile(
-                        leading: const Icon(Icons.calendar_today_outlined),
-                        title: const Text('Date'),
-                        subtitle: Text(_selectedDate.toDateLabel),
-                        trailing: TextButton(
-                          onPressed: _pickDate,
-                          child: const Text('Change'),
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        Text('Details', style: textTheme.titleMedium),
+                        const SizedBox(height: 10),
+                        TextFormField(
+                          controller: _titleController,
+                          decoration: const InputDecoration(
+                            labelText: 'Title',
+                            hintText: 'Meeting with Sarah',
+                          ),
+                          textInputAction: TextInputAction.next,
+                          validator: (String? value) {
+                            if (value == null || value.trim().isEmpty) {
+                              return 'Title is required.';
+                            }
+                            return null;
+                          },
                         ),
-                      ),
-                      const Divider(height: 1),
-                      ListTile(
-                        leading: const Icon(Icons.access_time_outlined),
-                        title: const Text('Time'),
-                        subtitle: Text(_selectedTime.format(context)),
-                        trailing: TextButton(
-                          onPressed: _pickTime,
-                          child: const Text('Change'),
+                        const SizedBox(height: 12),
+                        TextFormField(
+                          controller: _locationController,
+                          decoration: const InputDecoration(
+                            labelText: 'Location (optional)',
+                            hintText: 'Office, Zoom, Cafe',
+                          ),
+                          textInputAction: TextInputAction.done,
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
+                ),
+                const SizedBox(height: 10),
+                Row(
+                  children: <Widget>[
+                    Expanded(
+                      child: _SelectionTile(
+                        icon: Icons.calendar_today_outlined,
+                        label: 'Date',
+                        value: _selectedDate.toDateLabel,
+                        onTap: _pickDate,
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: _SelectionTile(
+                        icon: Icons.access_time_outlined,
+                        label: 'Time',
+                        value: _selectedTime.format(context),
+                        onTap: _pickTime,
+                      ),
+                    ),
+                  ],
                 ),
                 if (widget.parsedEvent != null && !widget.parsedEvent!.hasExplicitTime)
                   Padding(
@@ -185,7 +197,7 @@ class _AddEditEventScreenState extends State<AddEditEventScreen> {
                     child: Text(
                       'Time was not detected from message. Please confirm before saving.',
                       style: textTheme.bodySmall?.copyWith(
-                        color: Theme.of(context).colorScheme.secondary,
+                        color: theme.colorScheme.secondary,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -193,7 +205,7 @@ class _AddEditEventScreenState extends State<AddEditEventScreen> {
                 const SizedBox(height: 24),
                 SizedBox(
                   width: double.infinity,
-                  child: ElevatedButton.icon(
+                  child: FilledButton.icon(
                     onPressed: _save,
                     icon: const Icon(Icons.check_circle_outline),
                     label: Text(_isEditMode ? 'Save Changes' : 'Create Event'),
@@ -201,6 +213,105 @@ class _AddEditEventScreenState extends State<AddEditEventScreen> {
                 ),
               ],
             ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _DateTimeHeader extends StatelessWidget {
+  const _DateTimeHeader({
+    required this.dateLabel,
+    required this.timeLabel,
+  });
+
+  final String dateLabel;
+  final String timeLabel;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(22),
+        gradient: LinearGradient(
+          colors: <Color>[
+            theme.colorScheme.primary.withValues(alpha: 0.12),
+            theme.colorScheme.tertiary.withValues(alpha: 0.08),
+          ],
+        ),
+        border: Border.all(color: theme.colorScheme.outline),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Text('Schedule', style: theme.textTheme.titleMedium),
+          const SizedBox(height: 4),
+          Text(
+            '$dateLabel at $timeLabel',
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.78),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SelectionTile extends StatelessWidget {
+  const _SelectionTile({
+    required this.icon,
+    required this.label,
+    required this.value,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String label;
+  final String value;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(18),
+        child: Ink(
+          padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(18),
+            color: theme.colorScheme.surface.withValues(alpha: 0.94),
+            border: Border.all(color: theme.colorScheme.outline),
+          ),
+          child: Row(
+            children: <Widget>[
+              Icon(icon, size: 18, color: theme.colorScheme.primary),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Text(label, style: theme.textTheme.labelLarge),
+                    Text(
+                      value,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.bodySmall,
+                    ),
+                  ],
+                ),
+              ),
+              const Icon(Icons.chevron_right),
+            ],
           ),
         ),
       ),

@@ -18,8 +18,8 @@ class ChatBubble extends StatelessWidget {
 
     final bubbleColor = switch (message.author) {
       ChatAuthor.user => theme.colorScheme.primary,
-      ChatAuthor.system => theme.colorScheme.secondary.withValues(alpha: 0.14),
-      ChatAuthor.assistant => Colors.white,
+      ChatAuthor.system => theme.colorScheme.secondary.withValues(alpha: 0.16),
+      ChatAuthor.assistant => theme.colorScheme.surface,
     };
 
     final textColor = switch (message.author) {
@@ -34,14 +34,19 @@ class ChatBubble extends StatelessWidget {
         constraints: const BoxConstraints(maxWidth: 320),
         child: Container(
           margin: const EdgeInsets.symmetric(vertical: 6),
-          padding: const EdgeInsets.all(12),
+          padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
           decoration: BoxDecoration(
             color: bubbleColor,
+            border: Border.all(
+              color: isUser
+                  ? theme.colorScheme.primary
+                  : theme.colorScheme.outline.withValues(alpha: 0.8),
+            ),
             borderRadius: BorderRadius.only(
-              topLeft: const Radius.circular(16),
-              topRight: const Radius.circular(16),
-              bottomLeft: Radius.circular(isUser ? 16 : 4),
-              bottomRight: Radius.circular(isUser ? 4 : 16),
+              topLeft: const Radius.circular(18),
+              topRight: const Radius.circular(18),
+              bottomLeft: Radius.circular(isUser ? 18 : 6),
+              bottomRight: Radius.circular(isUser ? 6 : 18),
             ),
           ),
           child: Column(
@@ -51,7 +56,7 @@ class ChatBubble extends StatelessWidget {
                 message.text,
                 style: theme.textTheme.bodyMedium?.copyWith(color: textColor),
               ),
-              const SizedBox(height: 4),
+              const SizedBox(height: 6),
               Text(
                 message.createdAt.toTimeLabel,
                 style: theme.textTheme.labelSmall?.copyWith(

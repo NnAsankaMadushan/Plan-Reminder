@@ -33,6 +33,7 @@ class _GoogleCalendarScreenState extends State<GoogleCalendarScreen> {
         }
       },
       builder: (BuildContext context, GoogleCalendarState state) {
+        final theme = Theme.of(context);
         final groupedEvents = _groupEventsByDate(state.events);
         final sortedDates = groupedEvents.keys.toList()
           ..sort((DateTime a, DateTime b) => a.compareTo(b));
@@ -61,11 +62,12 @@ class _GoogleCalendarScreenState extends State<GoogleCalendarScreen> {
           },
           child: ListView(
             physics: const AlwaysScrollableScrollPhysics(),
-            padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+            padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
             children: <Widget>[
               _ConnectedHeader(
                 email: state.email ?? 'Connected',
                 isLoading: state.status == GoogleCalendarStatus.loading,
+                eventCount: state.events.length,
                 onRefresh: () {
                   context
                       .read<GoogleCalendarBloc>()
@@ -77,10 +79,10 @@ class _GoogleCalendarScreenState extends State<GoogleCalendarScreen> {
                       .add(const GoogleCalendarDisconnectRequested());
                 },
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 12),
               Text(
                 'Upcoming Events',
-                style: Theme.of(context).textTheme.titleMedium,
+                style: theme.textTheme.titleMedium,
               ),
               const SizedBox(height: 8),
               if (state.events.isEmpty)
@@ -89,10 +91,10 @@ class _GoogleCalendarScreenState extends State<GoogleCalendarScreen> {
                 ...<Widget>[
                   for (final date in sortedDates) ...<Widget>[
                     Padding(
-                      padding: const EdgeInsets.fromLTRB(2, 8, 2, 6),
+                      padding: const EdgeInsets.fromLTRB(2, 10, 2, 6),
                       child: Text(
                         date.toDateLabel,
-                        style: Theme.of(context).textTheme.titleSmall,
+                        style: theme.textTheme.titleSmall,
                       ),
                     ),
                     ...groupedEvents[date]!.map(
@@ -137,13 +139,31 @@ class _GoogleCalendarEventCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
+    final theme = Theme.of(context);
+
+    return Container(
       margin: const EdgeInsets.only(bottom: 8),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(18),
+        color: theme.colorScheme.surface.withValues(alpha: 0.94),
+        border: Border.all(color: theme.colorScheme.outline),
+      ),
       child: ListTile(
-        leading: Icon(
-          event.isAllDay
-              ? Icons.calendar_today_outlined
-              : Icons.event_available_outlined,
+        contentPadding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
+        leading: Container(
+          width: 38,
+          height: 38,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            color: theme.colorScheme.tertiary.withValues(alpha: 0.14),
+          ),
+          child: Icon(
+            event.isAllDay
+                ? Icons.calendar_today_outlined
+                : Icons.event_available_outlined,
+            color: theme.colorScheme.tertiary,
+            size: 18,
+          ),
         ),
         title: Text(event.title),
         subtitle: Text(_timeLabel(event)),
@@ -182,37 +202,58 @@ class _DisconnectedView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return SafeArea(
       child: Padding(
-        padding: const EdgeInsets.all(14),
+        padding: const EdgeInsets.all(12),
         child: Center(
-          child: Card(
-            child: Padding(
-              padding: const EdgeInsets.all(18),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: <Widget>[
-                  Text(
-                    'Google Calendar',
-                    style: Theme.of(context).textTheme.titleLarge,
-                  ),
-                  const SizedBox(height: 8),
-                  const Text(
-                    'Connect only if you want to see your Google Calendar upcoming events in this app.',
-                  ),
-                  const SizedBox(height: 6),
-                  const Text(
-                    'Your local reminder parser remains fully offline.',
-                  ),
-                  const SizedBox(height: 14),
-                  FilledButton.icon(
-                    onPressed: onConnect,
-                    icon: const Icon(Icons.link),
-                    label: const Text('Connect Google Calendar'),
-                  ),
+          child: Container(
+            width: double.infinity,
+            constraints: const BoxConstraints(maxWidth: 520),
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(24),
+              gradient: LinearGradient(
+                colors: <Color>[
+                  theme.colorScheme.tertiary.withValues(alpha: 0.12),
+                  theme.colorScheme.primary.withValues(alpha: 0.08),
                 ],
               ),
+              border: Border.all(color: theme.colorScheme.outline),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: <Widget>[
+                Icon(
+                  Icons.calendar_month_rounded,
+                  size: 34,
+                  color: theme.colorScheme.tertiary,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Connect Google Calendar',
+                  style: theme.textTheme.titleLarge,
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  'See your Google Calendar upcoming events directly in this app.',
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  'Local reminder parsing remains offline.',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.72),
+                  ),
+                ),
+                const SizedBox(height: 14),
+                FilledButton.icon(
+                  onPressed: onConnect,
+                  icon: const Icon(Icons.link),
+                  label: const Text('Connect Google Calendar'),
+                ),
+              ],
             ),
           ),
         ),
@@ -225,44 +266,67 @@ class _ConnectedHeader extends StatelessWidget {
   const _ConnectedHeader({
     required this.email,
     required this.isLoading,
+    required this.eventCount,
     required this.onRefresh,
     required this.onDisconnect,
   });
 
   final String email;
   final bool isLoading;
+  final int eventCount;
   final VoidCallback onRefresh;
   final VoidCallback onDisconnect;
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            Text('Connected as', style: Theme.of(context).textTheme.labelLarge),
-            const SizedBox(height: 4),
-            Text(email, style: Theme.of(context).textTheme.titleMedium),
-            const SizedBox(height: 10),
-            Row(
-              children: <Widget>[
-                OutlinedButton.icon(
+    final theme = Theme.of(context);
+
+    return Container(
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(22),
+        gradient: LinearGradient(
+          colors: <Color>[
+            theme.colorScheme.tertiary.withValues(alpha: 0.12),
+            theme.colorScheme.primary.withValues(alpha: 0.08),
+          ],
+        ),
+        border: Border.all(color: theme.colorScheme.outline),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Text('Connected as', style: theme.textTheme.labelLarge),
+          const SizedBox(height: 4),
+          Text(email, style: theme.textTheme.titleMedium),
+          const SizedBox(height: 4),
+          Text(
+            '$eventCount upcoming events loaded',
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.72),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: <Widget>[
+              Expanded(
+                child: OutlinedButton.icon(
                   onPressed: isLoading ? null : onRefresh,
                   icon: const Icon(Icons.refresh),
                   label: const Text('Refresh'),
                 ),
-                const SizedBox(width: 8),
-                TextButton.icon(
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: TextButton.icon(
                   onPressed: isLoading ? null : onDisconnect,
                   icon: const Icon(Icons.link_off),
                   label: const Text('Disconnect'),
                 ),
-              ],
-            ),
-          ],
-        ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
@@ -273,12 +337,15 @@ class _EmptyEventsCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
+        color: theme.colorScheme.surface.withValues(alpha: 0.94),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: theme.colorScheme.outline),
       ),
       child: const Text('No upcoming Google Calendar events found.'),
     );

@@ -47,6 +47,29 @@ class _AppShellState extends State<AppShell> {
 
   @override
   Widget build(BuildContext context) {
+    final destinations = <_ShellDestination>[
+      const _ShellDestination(
+        title: 'Plan Reminder',
+        subtitle: 'Turn natural language into reminders',
+      ),
+      const _ShellDestination(
+        title: 'Calendar',
+        subtitle: 'See your day at a glance',
+      ),
+      const _ShellDestination(
+        title: 'Notifications',
+        subtitle: 'Upcoming and past alert activity',
+      ),
+      const _ShellDestination(
+        title: 'Google Calendar',
+        subtitle: 'Connected external schedule',
+      ),
+      const _ShellDestination(
+        title: 'Settings',
+        subtitle: 'Tune behavior and integrations',
+      ),
+    ];
+
     final page = switch (_selectedIndex) {
       0 => const HomeScreen(key: ValueKey<String>('home_page')),
       1 => CalendarScreen(
@@ -69,34 +92,79 @@ class _AppShellState extends State<AppShell> {
           },
         ),
     };
-
-    final title = switch (_selectedIndex) {
-      0 => 'Plan Reminder',
-      1 => 'Calendar',
-      2 => 'Notifications',
-      3 => 'Google Calendar',
-      _ => 'Settings',
-    };
+    final destination = destinations[_selectedIndex];
+    final theme = Theme.of(context);
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(title),
-      ),
-      body: AnimatedSwitcher(
-        duration: const Duration(milliseconds: 260),
-        transitionBuilder: (Widget child, Animation<double> animation) {
-          return FadeTransition(
-            opacity: animation,
-            child: SlideTransition(
-              position: Tween<Offset>(
-                begin: const Offset(0.02, 0),
-                end: Offset.zero,
-              ).animate(animation),
-              child: child,
+        toolbarHeight: 76,
+        titleSpacing: 18,
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: <Widget>[
+            Text(destination.title),
+            const SizedBox(height: 1),
+            Text(
+              destination.subtitle,
+              style: theme.textTheme.labelLarge?.copyWith(
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.62),
+                fontWeight: FontWeight.w500,
+              ),
             ),
-          );
-        },
-        child: page,
+          ],
+        ),
+      ),
+      body: Stack(
+        children: <Widget>[
+          Positioned.fill(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: <Color>[
+                    const Color(0xFFEAF4FF),
+                    theme.colorScheme.surface,
+                    const Color(0xFFF8F7EF),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          Positioned(
+            top: -86,
+            right: -58,
+            child: _GlowOrb(
+              size: 220,
+              color: theme.colorScheme.primary.withValues(alpha: 0.12),
+            ),
+          ),
+          Positioned(
+            bottom: -110,
+            left: -70,
+            child: _GlowOrb(
+              size: 240,
+              color: theme.colorScheme.secondary.withValues(alpha: 0.13),
+            ),
+          ),
+          AnimatedSwitcher(
+            duration: const Duration(milliseconds: 260),
+            transitionBuilder: (Widget child, Animation<double> animation) {
+              return FadeTransition(
+                opacity: animation,
+                child: SlideTransition(
+                  position: Tween<Offset>(
+                    begin: const Offset(0.03, 0),
+                    end: Offset.zero,
+                  ).animate(animation),
+                  child: child,
+                ),
+              );
+            },
+            child: page,
+          ),
+        ],
       ),
       floatingActionButton: _selectedIndex == 1
           ? TweenAnimationBuilder<double>(
@@ -109,44 +177,87 @@ class _AppShellState extends State<AppShell> {
               child: FloatingActionButton.extended(
                 onPressed: _addManualEvent,
                 label: const Text('Add Event'),
-                icon: const Icon(Icons.add),
+                icon: const Icon(Icons.add_circle_outline),
               ),
             )
           : null,
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _selectedIndex,
-        onDestinationSelected: (int index) {
-          setState(() {
-            _selectedIndex = index;
-          });
-        },
-        destinations: const <NavigationDestination>[
-          NavigationDestination(
-            icon: Icon(Icons.chat_bubble_outline),
-            selectedIcon: Icon(Icons.chat_bubble),
-            label: 'Home',
+      bottomNavigationBar: SafeArea(
+        top: false,
+        minimum: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(24),
+          child: NavigationBar(
+            selectedIndex: _selectedIndex,
+            onDestinationSelected: (int index) {
+              setState(() {
+                _selectedIndex = index;
+              });
+            },
+            destinations: const <NavigationDestination>[
+              NavigationDestination(
+                icon: Icon(Icons.chat_bubble_outline),
+                selectedIcon: Icon(Icons.chat_bubble),
+                label: 'Home',
+              ),
+              NavigationDestination(
+                icon: Icon(Icons.calendar_month_outlined),
+                selectedIcon: Icon(Icons.calendar_month),
+                label: 'Calendar',
+              ),
+              NavigationDestination(
+                icon: Icon(Icons.notifications_outlined),
+                selectedIcon: Icon(Icons.notifications),
+                label: 'Alerts',
+              ),
+              NavigationDestination(
+                icon: Icon(Icons.event_outlined),
+                selectedIcon: Icon(Icons.event),
+                label: 'Google',
+              ),
+              NavigationDestination(
+                icon: Icon(Icons.settings_outlined),
+                selectedIcon: Icon(Icons.settings),
+                label: 'Settings',
+              ),
+            ],
           ),
-          NavigationDestination(
-            icon: Icon(Icons.calendar_month_outlined),
-            selectedIcon: Icon(Icons.calendar_month),
-            label: 'Calendar',
+        ),
+      ),
+    );
+  }
+}
+
+class _ShellDestination {
+  const _ShellDestination({
+    required this.title,
+    required this.subtitle,
+  });
+
+  final String title;
+  final String subtitle;
+}
+
+class _GlowOrb extends StatelessWidget {
+  const _GlowOrb({
+    required this.size,
+    required this.color,
+  });
+
+  final double size;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return IgnorePointer(
+      child: Container(
+        width: size,
+        height: size,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          gradient: RadialGradient(
+            colors: <Color>[color, color.withValues(alpha: 0.04)],
           ),
-          NavigationDestination(
-            icon: Icon(Icons.notifications_outlined),
-            selectedIcon: Icon(Icons.notifications),
-            label: 'Alerts',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.event_outlined),
-            selectedIcon: Icon(Icons.event),
-            label: 'Google',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.settings_outlined),
-            selectedIcon: Icon(Icons.settings),
-            label: 'Settings',
-          ),
-        ],
+        ),
       ),
     );
   }

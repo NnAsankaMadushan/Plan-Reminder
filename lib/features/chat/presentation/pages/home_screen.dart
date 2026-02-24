@@ -21,12 +21,41 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   final TextEditingController _messageController = TextEditingController();
+  final ScrollController _chatScrollController = ScrollController();
   final Uuid _uuid = const Uuid();
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _scrollToLatest(animate: false);
+    });
+  }
 
   @override
   void dispose() {
     _messageController.dispose();
+    _chatScrollController.dispose();
     super.dispose();
+  }
+
+  void _scrollToLatest({bool animate = true}) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_chatScrollController.hasClients) {
+        return;
+      }
+
+      final target = _chatScrollController.position.maxScrollExtent;
+      if (animate) {
+        _chatScrollController.animateTo(
+          target,
+          duration: const Duration(milliseconds: 240),
+          curve: Curves.easeOutCubic,
+        );
+      } else {
+        _chatScrollController.jumpTo(target);
+      }
+    });
   }
 
   void _sendMessage() {
@@ -110,6 +139,13 @@ class _HomeScreenState extends State<HomeScreen> {
       listeners: [
         BlocListener<ChatBloc, ChatState>(
           listenWhen: (ChatState previous, ChatState current) =>
+              previous.messages.length != current.messages.length,
+          listener: (BuildContext context, ChatState state) {
+            _scrollToLatest();
+          },
+        ),
+        BlocListener<ChatBloc, ChatState>(
+          listenWhen: (ChatState previous, ChatState current) =>
               previous.draftText != current.draftText,
           listener: (BuildContext context, ChatState state) {
             if (_messageController.text == state.draftText) {
@@ -139,29 +175,46 @@ class _HomeScreenState extends State<HomeScreen> {
       ],
       child: BlocBuilder<ChatBloc, ChatState>(
         builder: (BuildContext context, ChatState chatState) {
+          final theme = Theme.of(context);
+          final surface = theme.colorScheme.surface.withValues(alpha: 0.92);
+
           return SafeArea(
-            child: Column(
-              children: <Widget>[
-                Expanded(
-                  child: ListView.builder(
-                    padding: const EdgeInsets.fromLTRB(14, 12, 14, 0),
-                    itemCount: chatState.messages.length,
-                    itemBuilder: (BuildContext context, int index) {
-                      final message = chatState.messages[index];
-                      return ChatBubble(
-                        key: ValueKey<String>(message.id),
-                        message: message,
-                      )
-                          .animate()
-                          .fadeIn(duration: 220.ms)
-                          .slideY(begin: 0.12, end: 0);
-                    },
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(12, 8, 12, 10),
+              child: Column(
+                children: <Widget>[
+                  _AssistantBanner(state: chatState),
+                  const SizedBox(height: 10),
+                  Expanded(
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        color: surface,
+                        borderRadius: BorderRadius.circular(24),
+                        border: Border.all(
+                          color: theme.colorScheme.outline.withValues(alpha: 0.9),
+                        ),
+                      ),
+                      child: ListView.builder(
+                        controller: _chatScrollController,
+                        padding: const EdgeInsets.fromLTRB(12, 12, 12, 6),
+                        physics: const BouncingScrollPhysics(),
+                        itemCount: chatState.messages.length,
+                        itemBuilder: (BuildContext context, int index) {
+                          final message = chatState.messages[index];
+                          return ChatBubble(
+                            key: ValueKey<String>(message.id),
+                            message: message,
+                          )
+                              .animate()
+                              .fadeIn(duration: 220.ms)
+                              .slideY(begin: 0.12, end: 0);
+                        },
+                      ),
+                    ),
                   ),
-                ),
-                if (chatState.parsedEvent != null)
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(14, 8, 14, 0),
-                    child: ParsePreviewCard(
+                  if (chatState.parsedEvent != null) ...<Widget>[
+                    const SizedBox(height: 10),
+                    ParsePreviewCard(
                       parsedEvent: chatState.parsedEvent!,
                       onConfirm: () => _confirmParsedEvent(chatState.parsedEvent!),
                       onEdit: () => _editParsedEvent(chatState.parsedEvent!),
@@ -171,17 +224,19 @@ class _HomeScreenState extends State<HomeScreen> {
                             );
                       },
                     ).animate().fadeIn(duration: 200.ms).slideY(begin: 0.15, end: 0),
+                  ],
+                  const SizedBox(height: 10),
+                  _Composer(
+                    controller: _messageController,
+                    isListening: chatState.status == ChatStatus.listening,
+                    onVoiceTap: () => _toggleVoice(chatState),
+                    onSendTap: _sendMessage,
+                    onChanged: (String value) {
+                      context.read<ChatBloc>().add(ChatDraftUpdated(value));
+                    },
                   ),
-                _Composer(
-                  controller: _messageController,
-                  isListening: chatState.status == ChatStatus.listening,
-                  onVoiceTap: () => _toggleVoice(chatState),
-                  onSendTap: _sendMessage,
-                  onChanged: (String value) {
-                    context.read<ChatBloc>().add(ChatDraftUpdated(value));
-                  },
-                ),
-              ],
+                ],
+              ),
             ),
           );
         },
@@ -207,11 +262,15 @@ class _Composer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Container(
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
+        color: theme.colorScheme.surface.withValues(alpha: 0.96),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: theme.colorScheme.outline.withValues(alpha: 0.95)),
       ),
-      padding: const EdgeInsets.fromLTRB(12, 10, 12, 14),
+      padding: const EdgeInsets.all(8),
       child: Row(
         children: <Widget>[
           Expanded(
@@ -222,8 +281,11 @@ class _Composer extends StatelessWidget {
               textInputAction: TextInputAction.send,
               onChanged: onChanged,
               onSubmitted: (_) => onSendTap(),
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 hintText: 'Meeting with Sarah tomorrow at 10 am',
+                filled: false,
+                border: InputBorder.none,
+                contentPadding: const EdgeInsets.symmetric(horizontal: 8),
               ),
             ),
           ),
@@ -237,9 +299,66 @@ class _Composer extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 8),
-          IconButton.filled(
+          IconButton.filledTonal(
             onPressed: onSendTap,
             icon: const Icon(Icons.send_rounded),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _AssistantBanner extends StatelessWidget {
+  const _AssistantBanner({required this.state});
+
+  final ChatState state;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(22),
+        gradient: LinearGradient(
+          colors: <Color>[
+            theme.colorScheme.primary.withValues(alpha: 0.12),
+            theme.colorScheme.tertiary.withValues(alpha: 0.08),
+          ],
+        ),
+        border: Border.all(color: theme.colorScheme.outline),
+      ),
+      child: Row(
+        children: <Widget>[
+          Icon(
+            state.status == ChatStatus.listening
+                ? Icons.mic_external_on_outlined
+                : Icons.auto_awesome,
+            color: theme.colorScheme.primary,
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Text(
+                  'Quick Capture',
+                  style: theme.textTheme.titleMedium,
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  state.status == ChatStatus.listening
+                      ? 'Listening now. Speak your plan naturally.'
+                      : 'Type or talk. I will parse date, time, and location.',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.72),
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
       ),

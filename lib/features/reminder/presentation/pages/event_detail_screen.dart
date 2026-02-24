@@ -64,49 +64,136 @@ class EventDetailScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
+    final theme = Theme.of(context);
 
     return Scaffold(
       appBar: AppBar(title: const Text('Event Details')),
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: <Widget>[
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: <Widget>[
-                      Text(event.title, style: textTheme.titleLarge),
-                      const SizedBox(height: 8),
-                      Text('Date: ${event.dateTime.toDateLabel}'),
-                      const SizedBox(height: 4),
-                      Text('Time: ${event.dateTime.toTimeLabel}'),
-                      const SizedBox(height: 4),
-                      Text('Location: ${event.location ?? 'Not set'}'),
-                      const SizedBox(height: 4),
-                      Text('Created: ${event.createdAt.toDateTimeLabel}'),
+              Container(
+                padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(22),
+                  gradient: LinearGradient(
+                    colors: <Color>[
+                      theme.colorScheme.primary.withValues(alpha: 0.12),
+                      theme.colorScheme.tertiary.withValues(alpha: 0.08),
                     ],
                   ),
+                  border: Border.all(color: theme.colorScheme.outline),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Text(event.title, style: textTheme.titleLarge),
+                    const SizedBox(height: 4),
+                    Text(
+                      '${event.dateTime.toDateLabel} at ${event.dateTime.toTimeLabel}',
+                      style: textTheme.bodyMedium?.copyWith(
+                        color: theme.colorScheme.onSurface.withValues(alpha: 0.72),
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              const Spacer(),
-              FilledButton.icon(
-                onPressed: () => _editEvent(context),
-                icon: const Icon(Icons.edit_outlined),
-                label: const Text('Edit'),
-              ),
               const SizedBox(height: 10),
-              OutlinedButton.icon(
-                onPressed: () => _deleteEvent(context),
-                icon: const Icon(Icons.delete_outline),
-                label: const Text('Delete'),
+              _DetailRow(
+                icon: Icons.calendar_today_outlined,
+                label: 'Date',
+                value: event.dateTime.toDateLabel,
+              ),
+              const SizedBox(height: 8),
+              _DetailRow(
+                icon: Icons.access_time_outlined,
+                label: 'Time',
+                value: event.dateTime.toTimeLabel,
+              ),
+              const SizedBox(height: 8),
+              _DetailRow(
+                icon: Icons.location_on_outlined,
+                label: 'Location',
+                value: event.location ?? 'Not set',
+              ),
+              const SizedBox(height: 8),
+              _DetailRow(
+                icon: Icons.history_toggle_off_outlined,
+                label: 'Created',
+                value: event.createdAt.toDateTimeLabel,
+              ),
+              const Spacer(),
+              Row(
+                children: <Widget>[
+                  Expanded(
+                    child: FilledButton.icon(
+                      onPressed: () => _editEvent(context),
+                      icon: const Icon(Icons.edit_outlined),
+                      label: const Text('Edit'),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: () => _deleteEvent(context),
+                      icon: const Icon(Icons.delete_outline),
+                      label: const Text('Delete'),
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _DetailRow extends StatelessWidget {
+  const _DetailRow({
+    required this.icon,
+    required this.label,
+    required this.value,
+  });
+
+  final IconData icon;
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Container(
+      padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        color: theme.colorScheme.surface.withValues(alpha: 0.94),
+        border: Border.all(color: theme.colorScheme.outline),
+      ),
+      child: Row(
+        children: <Widget>[
+          Icon(icon, size: 18, color: theme.colorScheme.primary),
+          const SizedBox(width: 10),
+          Text(
+            '$label:',
+            style: theme.textTheme.labelLarge?.copyWith(
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.72),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              value,
+              textAlign: TextAlign.end,
+              overflow: TextOverflow.ellipsis,
+              maxLines: 1,
+            ),
+          ),
+        ],
       ),
     );
   }
